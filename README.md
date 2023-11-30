@@ -117,5 +117,18 @@ checks | Tỉ lệ check thành công. |
 
 Số liệu được sinh ra khi có HTTP request
 
+| Tên trường                  | Mô tả                                              |
+| --------------------------- | --------------------------------------------------- |
+| `http_reqs`                 | Tổng số HTTP requests mà k6 đã sinh ra               |
+| `http_req_blocked`          | Thời gian chờ kết nối TCP                           |
+| `http_req_connecting`       | Thời gian thiết lập kết nối TCP đến máy chủ         |
+| `http_req_tls_handshaking`  | Thời gian máy khách và máy chủ xác nhận lẫn nhau    |
+| `http_req_sending`          | Thời gian gửi dữ liệu đến máy chủ                    |
+| `http_req_waiting`          | Thời gian chờ phản hồi từ máy chủ                   |
+| `http_req_receiving`        | Thời gian nhận dữ liệu phản hồi từ máy chủ          |
+| `http_req_duration`         | Tổng thời gian gửi request, chờ phản hồi và nhận dữ liệu phản hồi từ máy chủ |
+
+
+
 - https://github.com/grafana/k6.git
 - https://medium.com/swlh/beautiful-load-testing-with-k6-and-docker-compose-4454edb3a2e3
