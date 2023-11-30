@@ -104,15 +104,16 @@ Sau khi quá trình test hoàn tất thì màn hình sẽ hiển thị kết qu�
 - scenarios: ...: tóm tắt kịch bản thử nghiệm và 1 số thông tin tổng quan:
 - Tóm tắt kết quả test*
 
-Tên trường | Mô tả |
---- | --- |
-vus | Số lượng active users. |
-vus_max | Số lượng VU tối đa. |
-iterations | Tổng số lần VUs thực thi default functionbiết là gói tin đã nhận được dữ liệu thành công. |
-iteration_duration | Thời gian cần thiết để thực hiện 1 lần thực thi default function. |
-data_received | Lượng data nhận về. |
-data_received | Lượng data gửi đi. |
-checks | Tỉ lệ check thành công. |
+| Tên trường           | Mô tả                                                                  |
+| -------------------- | ---------------------------------------------------------------------- |
+| `vus`                | Số lượng active users.                                                |
+| `vus_max`            | Số lượng VU tối đa.                                                    |
+| `iterations`         | Tổng số lần VUs thực thi default function.                            |
+| `iteration_duration` | Thời gian cần thiết để thực hiện 1 lần thực thi default function.    |
+| `data_received`      | Lượng data nhận về.                                                   |
+| `data_sent`          | Lượng data gửi đi.                                                    |
+| `checks`             | Tỉ lệ check thành công.                                               |
+
 
 
 Số liệu được sinh ra khi có HTTP request
@@ -128,7 +129,104 @@ Số liệu được sinh ra khi có HTTP request
 | `http_req_receiving`        | Thời gian nhận dữ liệu phản hồi từ máy chủ          |
 | `http_req_duration`         | Tổng thời gian gửi request, chờ phản hồi và nhận dữ liệu phản hồi từ máy chủ |
 
+# 1 số options thông dụng
 
+Để mô tả kịch bản test với số lượng VU là 10, duration 30s, ta có 2 cách làm như sau
 
+Cách 1: Chạy dòng lệnh
+```
+k6 run --vus 10 --duration 30s script.js
+```
+Cách 2: Thêm các options vào file .js rồi chạy với câu lệnh run
+```
+export let options = {
+    duration : '15s',
+    vus : 50,
+};
+```
+
+Rất rõ ràng, cách làm 2 giúp ta dễ dàng kiểm soát và thay đổi linh hoạt các options hơn. Ngoài VUs và duration, k6 còn cung cấp rất nhiều options khác hỗ trợ quá trình kiểm thử.
+
+# Thresholds
+Các tiêu chí dùng để xác định hiệu suất kỳ vọng của hệ thống được test.
+```
+thresholds: {
+        http_req_failed: ['rate<0.01'], // tỉ lệ lỗi cần nhỏ hơn 1%
+        http_req_duration: ['p(95)<800'], // 95% requests có tổng thời gian xử lý nhỏ hơn 800ms
+      }
+```
+Nếu các tiêu chí đều đạt, ta có thể thấy trước các thông số http_req_failed và http_req_duration trong kết quả sẽ có tick xanh như thế này
+
+```
+checks.........................: 100.00% ✓ 406       ✗ 0
+     data_received..................: 1.5 MB  49 kB/s
+     data_sent......................: 198 kB  6.4 kB/s
+     http_req_blocked...............: avg=5.18ms   min=0s       med=0s       max=210.95ms p(90)=0s       p(95)=0s
+     http_req_connecting............: avg=858.15µs min=0s       med=0s       max=43.95ms  p(90)=0s       p(95)=0s
+   ✓ http_req_duration..............: avg=237.38ms min=126.53ms med=206.94ms max=743.88ms p(90)=327.01ms p(95)=416.95ms
+       { expected_response:true }...: avg=237.38ms min=126.53ms med=206.94ms max=743.88ms p(90)=327.01ms p(95)=416.95ms
+   ✓ http_req_failed................: 0.00%   ✓ 0         ✗ 406
+     ...
+
+```
+Trường hợp có tiêu chí không đạt, thông báo sẽ được hiển thị như sau
+
+```
+ checks.........................: 100.00% ✓ 134       ✗ 0
+     data_received..................: 524 kB  49 kB/s
+     data_sent......................: 70 kB   6.5 kB/s
+     http_req_blocked...............: avg=13.4ms   min=0s       med=0s       max=180.37ms p(90)=0s       p(95)=179.38ms
+     http_req_connecting............: avg=2.89ms   min=0s       med=0s       max=58.56ms  p(90)=0s       p(95)=31.16ms
+   ✗ http_req_duration..............: avg=256.42ms min=150.03ms med=218.64ms max=817.75ms p(90)=424.47ms p(95)=530.22ms
+       { expected_response:true }...: avg=256.42ms min=150.03ms med=218.64ms max=817.75ms p(90)=424.47ms p(95)=530.22ms
+   ✓ http_req_failed................: 0.00%   ✓ 0         ✗ 134
+     http_req_receiving.............: avg=918.51µs min=0s       med=0s       max=25.1ms   p(90)=1.32ms   p(95)=4.45ms
+     ...
+ERRO[0012] some thresholds have failed
+
+```
+
+# Stages
+
+Trong thực tế, ứng dụng của chúng ta chắc chắn sẽ gặp phải các trường hợp số lượng request gọi vào server đột ngột tăng cao/giảm mạnh. Để kiểm tra khả năng đáp ứng của hệ thống trong trường hợp lượng người dùng thay đổi theo thời gian, chúng ta có thể sử dụng stages.
+
+Ví dụ: Cấu hình dưới đây mô tả trường hợp lượng VU tăng dần từ 100 lên 400 mỗi 1 phút, sau đó đột ngột giảm xuống 0
+```
+export let options = {
+  stages: [
+    { duration: '1m', target: 100 },
+    { duration: '1m', target: 200 },
+    { duration: '1m', target: 300 },
+    { duration: '1m', target: 400 },
+    { duration: '5m', target: 0 },
+  ],
+};
+```
+
+# Checks
+Lưu lại kết quả check (pass/fail) của respones trong khi script vẫn tiếp tục được thực thi
+
+Ví dụ: Để kiểm tra trạng thái của response trả về có phải là 200 không, ta có thể chạy file .js chứa nội dung dưới đây
+
+```
+import { check } from 'k6';
+import http from 'k6/http';
+export default function () {
+  let res = http.get('http://example.com/test');
+  check(res, {
+    'is status 200': (r) => r.status === 200,
+  });
+}
+Kết quả trả về sẽ bao gồm tỉ lệ pass/fail như dưới đây
+
+ ✗ Get direction response status code is 200
+      ↳  91% — ✓ 94 / ✗ 9
+
+     checks.........................: 91.26% ✓ 94        ✗ 9
+     data_received..................: 533 kB 75 kB/s
+
+```
+
+# Tham Khảo
 - https://github.com/grafana/k6.git
 - https://medium.com/swlh/beautiful-load-testing-with-k6-and-docker-compose-4454edb3a2e3
