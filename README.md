@@ -1,5 +1,3 @@
-- https://github.com/grafana/k6.git
-
 Đã bao giờ bạn code 1 API mà khi dùng postman tạo request thì thấy cũng có response. Tuy nhiên, sau khi đưa vào sử dụng thì ngày nào cũng thấy bị log lỗi do request gửi vào liên tục, dẫn đến tình trạng cao tải, thành ra tính năng thì có, nhưng gần như không dùng được chưa?
 
 Nếu câu trả lời là rồi, thì hãy cùng mình tìm hiểu qua về performance testing nhé!
@@ -20,7 +18,7 @@ Mọi người có thể tham khảo cách cài đặt k6 tại đây
 
 ```
 docker-compose up -d influxdb grafana
-
+docker-compose run --rm k6 run /scripts/demo.js
 ```
 
 Truy cập vào Grafana server http://localhost:3000
@@ -52,3 +50,72 @@ export default function() {
 
 ```
 
+Ở đây, quá trình test mô tả 50 người dùng truy cập vào trang https://test.k6.io trong vòng 15 giây
+
+Để chạy test, bạn hãy:
+
+B1: Lưu code dưới dạng file js, ví dụ "demo.js"
+
+B2: (Mình dùng cmd) mở cmd từ folder chứa file js và chạy câu lệnh sau
+
+```
+k6 run demo.js
+```
+
+# HTTP POST request
+Hãy cùng xem qua 1 ví dụ về POST request với dữ liệu truyền vào dưới dạng JSON
+
+```
+import{ sleep } from 'k6';
+import http from 'k6/http';
+
+export let options = {
+    duration : '15s',
+    vus : 50,
+};
+
+export default function () {
+    const url = 'http://example.com/login';
+    const body = JSON.stringify({
+      name: 'wfng',
+      age: '99',
+    });
+
+    const params = {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+
+    http.post(url, body, params);
+  }
+```
+
+# Kết quả đầu ra
+
+Sau khi quá trình test hoàn tất thì màn hình sẽ hiển thị kết quả đầu ra như sau
+
+<img src="https://i.imgur.com/LxPpB4f.png" />
+
+## Chi tiết thử nghiệm:
+
+- execution: local: thông tin về mode thực thi k6 (local hoặc cloud)
+- script: path/to/script.js: tên của tệp được thực thi
+- scenarios: ...: tóm tắt kịch bản thử nghiệm và 1 số thông tin tổng quan:
+- Tóm tắt kết quả test*
+
+Tên trường | Mô tả |
+--- | --- |
+vus | Số lượng active users. |
+vus_max | Số lượng VU tối đa. |
+iterations | Tổng số lần VUs thực thi default functionbiết là gói tin đã nhận được dữ liệu thành công. |
+iteration_duration | Thời gian cần thiết để thực hiện 1 lần thực thi default function. |
+data_received | Lượng data nhận về. |
+data_received | Lượng data gửi đi. |
+checks | Tỉ lệ check thành công. |
+
+
+Số liệu được sinh ra khi có HTTP request
+
+- https://github.com/grafana/k6.git
+- https://medium.com/swlh/beautiful-load-testing-with-k6-and-docker-compose-4454edb3a2e3
